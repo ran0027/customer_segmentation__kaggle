@@ -1,3 +1,7 @@
+# Secrets
+.mapbox_token
+
+# Data
 Data/
 
 # Byte-compiled / optimized / DLL files
