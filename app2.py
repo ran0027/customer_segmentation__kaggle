@@ -1,4 +1,5 @@
 from dash import Dash, html, dash_table, dcc, callback, Output, Input
+import json
 import pandas as pd
 import plotly.express as px
 import dash_bootstrap_components as dbc
@@ -35,8 +36,37 @@ app.layout = dbc.Container([
         dbc.Col([
             dcc.Graph(id='test', figure=PAC_fig)
             ])
+        ]),
+    dbc.Row([
+        dbc.Col([
+            html.Div(id='test-output')
         ])
     ])
+    ])
+
+# count number of clicks (to determine whether to expand or collapse)
+click_counter = 0
+@app.callback(
+    Output('test-output', 'children'),
+    Input('test', 'clickData')
+)
+def display_click_data(clickData):
+    # count number of clicks (to determine whether to expand or collapse)
+    global click_counter
+    click_counter+=1
+    # load click data dictionary
+    if clickData:
+        click_data = clickData["points"][0]
+    else:
+        return None
+    # decide whether to expand or collapse (note that loading the page counts as a click)
+    if click_counter % 2 == 0:
+        # return click_data['label']
+        return f'{round(click_data["value"] / 100000)/10} M'
+    else:
+        return None
+    # below returns entire dictionary (for testing):
+    # return json.dumps(clickData, indent=2)
 
 if __name__ == '__main__':
     app.run_server(debug=True)
