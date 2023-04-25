@@ -13,7 +13,7 @@ px.defaults.template = "plotly_white"
 clustered_customer_data = pd.read_csv('Data/clustered_data.csv')
 
 # instantiate a dash app with a dbc theme; include meta-tags for mobile viewing (add later)
-app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP],
+app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY],
            meta_tags=[{'name': 'viewport', 'content': 'width=device-width, initial-scale=1.0'}])
 
 # customize treemap figure using figure.update_traces method
