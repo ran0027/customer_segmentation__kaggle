@@ -14,6 +14,8 @@ clustered_customer_data = pd.read_csv('Data/clustered_data.csv')
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY],
            prevent_initial_callbacks="initial_duplicate",
            meta_tags=[{'name': 'viewport', 'content': 'width=device-width, initial-scale=1.0'}])
+# Dash is built on top of Flask; access underlying Flask server; name application for AWS
+application = app.server
 
 # instantiate and customize treemap figure for displaying customer segmentation
 PAC_fig = px.treemap(clustered_customer_data,
@@ -34,10 +36,14 @@ PAC_fig.update_traces(marker=dict(cornerradius=5),
 app.layout = dbc.Container([
     dbc.Row([
         dbc.Col([
-            html.H3('Customer Segments'),
+            html.H3('Customer Segments', className='text-center m-md-5')
+        ])
+    ], justify='end'),
+    dbc.Row([
+        dbc.Col([
             dcc.Graph(id='treemap', figure=PAC_fig)
         ])
-    ]),
+    ], justify='start'),
     dbc.Row([
         dbc.Tabs(
             [dbc.Tab(label='Tech and Shoes', tab_id='tab0'),
@@ -88,5 +94,10 @@ def update_tab_content(active_tab, tab_labels):
     ])
     return row
 
+# # to run locally:
+# if __name__ == '__main__':
+#     app.run_server(debug=True, port=8050, host='127.0.0.1')
+
+# to deploy to AWS:
 if __name__ == '__main__':
-    app.run_server(debug=True, port=8050, host='127.0.0.1')
+    application.run(host='0.0.0.0', port='8080')
