@@ -4,8 +4,8 @@ import pandas as pd
 import plotly.express as px
 import dash_bootstrap_components as dbc
 
-# Set a plotly express template for aesthetically pleasing plots
-px.defaults.template = "plotly_white"
+# # Set a plotly express template for aesthetically pleasing plots
+# px.defaults.template = "plotly_white"
 
 # load clustered customer data
 clustered_customer_data = pd.read_csv('Data/clustered_data.csv')
@@ -18,8 +18,9 @@ app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY],
 application = app.server
 
 # instantiate and customize treemap figure for displaying customer segmentation
+one_liner = "Customer segments determined using descriptive statistics of K-Means clusters."
 PAC_fig = px.treemap(clustered_customer_data,
-                     path=[px.Constant("Hover for Total Gross to Date"), 'cluster'],
+                     path = ['cluster'],
                      values='price'
                      )
 PAC_fig.update_traces(marker=dict(cornerradius=5),
@@ -27,8 +28,9 @@ PAC_fig.update_traces(marker=dict(cornerradius=5),
                       hovertemplate = 'Total Gross:<br>&nbsp;&nbsp;&nbsp;%{value:$,.3s}', # d3.format formatting
                       hoverlabel_bordercolor='slategray',
                       hoverlabel_font = dict(color='white', family='Balto'),
-                      insidetextfont=dict(color='white', family='Balto', size=16),
+                      insidetextfont=dict(color='white', family='Balto', size=30),
                       outsidetextfont=dict(color='slategray', family='Balto', size=26))
+PAC_fig.update_layout(margin=dict(l=20, r=20, t=0, b=20))
 
 # specify app layout with TWO ROWS
 # (one for treemap, showing relationship b/w clusters,
@@ -36,22 +38,30 @@ PAC_fig.update_traces(marker=dict(cornerradius=5),
 app.layout = dbc.Container([
     dbc.Row([
         dbc.Col([
-            html.H3('Customer Segments', className='text-center m-md-5')
-        ])
-    ], justify='end'),
-    dbc.Row([
-        dbc.Col([
+            html.H3('Customer Segments', className='text-center mt-5 mb-0'),
+            html.P('Customer segments were obtained via k-means clustering.',
+                className='mt-2 ms-4 mb-0 text-muted'),
+            html.P(id='click-data'),
             dcc.Graph(id='treemap', figure=PAC_fig)
         ])
-    ], justify='start'),
+    # ]),
+    # dbc.Row([
+    #     dbc.Col([
+    #         html.H3('Customer Segments', className='text-center m-md-5')
+    #     ])
+    # ], justify='end'),
+    # dbc.Row([
+    #     dbc.Col([
+    #         dcc.Graph(id='treemap', figure=PAC_fig)
+    #     ])
+    ], justify='center'),
     dbc.Row([
         dbc.Tabs(
             [dbc.Tab(label='Tech and Shoes', tab_id='tab0'),
              dbc.Tab(label='Women', tab_id='tab1'),
              dbc.Tab(label='Men', tab_id='tab2'),
              dbc.Tab(label='Parents', tab_id='tab3')],
-             id='tabs',
-             active_tab='Tech and Shoes'
+             id='tabs'
         ),
         # this store lets us access the tab label via the tab id
         dcc.Store(id='tab-labels', data=json.dumps(
@@ -68,16 +78,27 @@ app.layout = dbc.Container([
 @app.callback(
         Output('tab-content', 'children'),
         Input('tabs', 'active_tab'),
-        State('tab-labels', 'data'),
-        prevent_initial_call=True # don't run when page loads
+        State('tab-labels', 'data')
 )
 def update_tab_content(active_tab, tab_labels):
     # get cluster name for active_tab
     cluster = json.loads(tab_labels)[active_tab]
     # get data for cluster
     df = clustered_customer_data.loc[clustered_customer_data.cluster == cluster]
-    # build pie chart of spending by category for that cluster
-    fig = px.pie(df, values='price', names='category', title='Spending Breakdown for Cluster')
+    df_aggregated = df.groupby(['category'], as_index=False).sum()
+
+    # # pie chart
+    # fig = px.pie(df_aggregated, values='price', names='category', title='Spending Breakdown for Cluster')
+    # bar graph
+    fig = px.bar(df_aggregated, x='category', y='price', text_auto='.2s')
+    # hover_df = df.groupby(['category'], as_index=False).mean()['price_per_item']
+    fig.update_layout(title='Spending Breakdown for Segment',
+                      title_x=0.5,
+                      yaxis=dict(title='Total Gross to Date (in $)'),
+                      xaxis=dict(title='',
+                                 categoryorder='total descending'))
+    fig.update_traces(hovertemplate=None, hoverinfo='skip')
+
     # build row of items to display in "tab-content" div
     row = dbc.Row([
             dbc.Col([
@@ -85,7 +106,7 @@ def update_tab_content(active_tab, tab_labels):
                     # cluster name
                     html.H1(cluster),
                     # total gross to date
-                    html.H2(f'Total Gross to Date: {round(df["price"].sum() / 100000)/10} M')])
+                    html.H2(f'Total Gross to Date: ${round(df["price"].sum() / 100000)/10} M')])
             ]),
             dbc.Col([
                 # pie chart with spending by category
@@ -94,10 +115,17 @@ def update_tab_content(active_tab, tab_labels):
     ])
     return row
 
-# # to run locally:
-# if __name__ == '__main__':
-#     app.run_server(debug=True, port=8050, host='127.0.0.1')
+# ADD: treemap click triggers active_tab selection
+# @app.callback(
+#     Output('click-data', 'children'),
+#     Input('treemap', 'clickData'))
+# def display_click_data(clickData):
+#     return json.dumps(clickData)
 
-# to deploy to AWS:
+# to run locally:
 if __name__ == '__main__':
-    application.run(host='0.0.0.0', port='8080')
+    app.run_server(debug=True, port=8050, host='127.0.0.1')
+
+# # to deploy to AWS:
+# if __name__ == '__main__':
+#     application.run(host='0.0.0.0', port='8080')
