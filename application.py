@@ -1,3 +1,4 @@
+from flask import Flask
 from dash import Dash, html, dash_table, dcc, callback, Output, Input, State
 import json
 import pandas as pd
@@ -10,15 +11,17 @@ import dash_bootstrap_components as dbc
 # load clustered customer data
 clustered_customer_data = pd.read_csv('Data/clustered_data.csv')
 
+# Flask app
+flask_app = Flask(__name__)
+
 # instantiate a dash app with a dbc theme; include meta-tags for mobile viewing (add later)
-app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY],
+app = Dash(__name__,
+           server=flask_app,
+           external_stylesheets=[dbc.themes.FLATLY],
            prevent_initial_callbacks="initial_duplicate",
            meta_tags=[{'name': 'viewport', 'content': 'width=device-width, initial-scale=1.0'}])
-# Dash is built on top of Flask; access underlying Flask server; name application for AWS
-application = app.server
 
 # instantiate and customize treemap figure for displaying customer segmentation
-one_liner = "Customer segments determined using descriptive statistics of K-Means clusters."
 PAC_fig = px.treemap(clustered_customer_data,
                      path = ['cluster'],
                      values='price'
@@ -44,16 +47,6 @@ app.layout = dbc.Container([
             html.P(id='click-data'),
             dcc.Graph(id='treemap', figure=PAC_fig)
         ])
-    # ]),
-    # dbc.Row([
-    #     dbc.Col([
-    #         html.H3('Customer Segments', className='text-center m-md-5')
-    #     ])
-    # ], justify='end'),
-    # dbc.Row([
-    #     dbc.Col([
-    #         dcc.Graph(id='treemap', figure=PAC_fig)
-    #     ])
     ], justify='center'),
     dbc.Row([
         dbc.Tabs(
@@ -87,10 +80,14 @@ def update_tab_content(active_tab, tab_labels):
     df = clustered_customer_data.loc[clustered_customer_data.cluster == cluster]
     df_aggregated = df.groupby(['category'], as_index=False).sum()
 
-    # # pie chart
+    # instantiate and customize figure for spending breakdown
+
+    # # OLD: pie chart
     # fig = px.pie(df_aggregated, values='price', names='category', title='Spending Breakdown for Cluster')
+
     # bar graph
     fig = px.bar(df_aggregated, x='category', y='price', text_auto='.2s')
+    # not in use yet: hover df to get cluster average "spend per item" for each category
     # hover_df = df.groupby(['category'], as_index=False).mean()['price_per_item']
     fig.update_layout(title='Spending Breakdown for Segment',
                       title_x=0.5,
@@ -116,6 +113,7 @@ def update_tab_content(active_tab, tab_labels):
     return row
 
 # ADD: treemap click triggers active_tab selection
+
 # @app.callback(
 #     Output('click-data', 'children'),
 #     Input('treemap', 'clickData'))
@@ -123,9 +121,6 @@ def update_tab_content(active_tab, tab_labels):
 #     return json.dumps(clickData)
 
 # to run locally:
-if __name__ == '__main__':
-    app.run_server(debug=True, port=8050, host='127.0.0.1')
 
-# # to deploy to AWS:
 # if __name__ == '__main__':
-#     application.run(host='0.0.0.0', port='8080')
+#     app.run_server(debug=True, port=8050, host='127.0.0.1')
