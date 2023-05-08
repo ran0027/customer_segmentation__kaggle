@@ -1,1 +1,1 @@
-web: waitress-serve --port= application:flask_app
+web: waitress-serve application:flask_app
