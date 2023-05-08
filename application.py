@@ -1,5 +1,6 @@
 from flask import Flask
 from dash import Dash, html, dash_table, dcc, callback, Output, Input, State
+import boto3
 import json
 import pandas as pd
 import plotly.express as px
@@ -8,8 +9,13 @@ import dash_bootstrap_components as dbc
 # # Set a plotly express template for aesthetically pleasing plots
 # px.defaults.template = "plotly_white"
 
-# load clustered customer data
-clustered_customer_data = pd.read_csv('Data/clustered_data.csv')
+# # load clustered customer data
+# clustered_customer_data = pd.read_csv('Data/clustered_data.csv')
+# try loading from bucket
+clustered_customer_data = pd.read_csv('s3://customer-segmentation-kaggle/clustered_data.csv')
+# s3 = boto3.resource('s3')
+# bucket = s3.Object('customer-segmentation-kaggle', 'clustered_data.csv')
+# response = bucket.get()
 
 # Flask app
 flask_app = Flask(__name__)
@@ -122,5 +128,5 @@ def update_tab_content(active_tab, tab_labels):
 
 # to run locally:
 
-# if __name__ == '__main__':
-#     app.run_server(debug=True, port=8050, host='127.0.0.1')
+if __name__ == '__main__':
+    app.run_server(debug=True, port=8050, host='127.0.0.1')
