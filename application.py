@@ -155,5 +155,9 @@ def update_tab_content(active_tab, tab_labels):
 #     return json.dumps(clickData)
 
 ### RUN LOCALLY
+# if __name__ == '__main__':
+#     app.run_server(debug=True, port=8050, host='127.0.0.1')
+
+### DEPLOY (Heroku)
 if __name__ == '__main__':
-    app.run_server(debug=True, port=8050, host='127.0.0.1')
+    app.run_server(debug=True)
