@@ -1,6 +1,7 @@
 from flask import Flask
 from dash import Dash, html, dash_table, dcc, callback, Output, Input, State
 import boto3
+import s3fs
 import os
 import json
 import pandas as pd
@@ -12,22 +13,18 @@ import dash_bootstrap_components as dbc
 ## Locally
 # clustered_customer_data = pd.read_csv('Data/clustered_data.csv')
 
-# ## From the cloud
-# # access S3 keys from config variables set on Heroku
-# import s3fs
+## From the cloud
+# access S3 keys from config variables set on Heroku
+ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
+SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
+BUCKET = 'customer-segmentation-kaggle' # not technically needed
+fp = 's3://customer-segmentation-kaggle/clustered_data.csv'
 
-# KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
-# ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
-# BUCKET = 'customer-segmentation-kaggle'
-# fp = 's3://customer-segmentation-kaggle/clustered_data.csv'
-
-# fs = s3fs.S3FileSystem(anon=False, key=KEY_ID, secret=ACCESS_KEY)
-
-# with fs.open(fp) as f:
-#    clustered_customer_data = pd.read_csv(f)
+fs = s3fs.S3FileSystem(anon=False, key=ACCESS_KEY_ID, secret=SECRET_ACCESS_KEY)
 
 # load clustered customer data from S3 bucket
-clustered_customer_data = pd.read_csv('s3://customer-segmentation-kaggle/clustered_data.csv')
+with fs.open(fp) as f:
+   clustered_customer_data = pd.read_csv(f)
 
 ### APP
 ## Flask app
@@ -64,7 +61,9 @@ app.layout = dbc.Container([
     dbc.Row([
         dbc.Col([
             html.H3('Customer Segments', className='text-center mt-5 mb-0'),
-            html.P('Customer segments were obtained via k-means clustering.',
+            html.P(['Customer segments were obtained via k-means clustering. See ',
+                    html.A('this Jupyter notebook on GitHub', href='https://github.com/ran0027/customer_segmentation__kaggle/blob/main/notebook.ipynb'),
+                    ' for details.'],
                 className='mt-2 ms-4 mb-0 text-muted'),
             html.P(id='click-data'),
             dcc.Graph(id='treemap', figure=PAC_fig)
@@ -134,14 +133,6 @@ def update_tab_content(active_tab, tab_labels):
             ])
     ])
     return row
-
-# ADD: treemap click triggers active_tab selection
-
-# @app.callback(
-#     Output('click-data', 'children'),
-#     Input('treemap', 'clickData'))
-# def display_click_data(clickData):
-#     return json.dumps(clickData)
 
 ### RUN LOCALLY
 # if __name__ == '__main__':
