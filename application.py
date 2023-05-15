@@ -14,10 +14,31 @@ import dash_bootstrap_components as dbc
 
 ## From the cloud
 # access S3 keys from config variables set on Heroku
-AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
-AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
+import s3fs
+
+KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
+ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
+BUCKET = 'customer-segmentation-kaggle'
+fp = 's3://customer-segmentation-kaggle/clustered_data.csv'
+
+
+fs = s3fs.S3FileSystem(anon=False, key=KEY_ID, secret=ACCESS_KEY)
+
+with fs.open(fp) as f:
+   clustered_customer_data = pd.read_csv(f)
+
+# only works if using s3 client / resource, not s3fs via pandas
+# AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
+# AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
+
+# same here:
+# session = boto3.Session(
+#     aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+#     aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY']
+# )
+
 # load clustered customer data from S3 bucket
-clustered_customer_data = pd.read_csv('s3://customer-segmentation-kaggle/clustered_data.csv')
+# clustered_customer_data = pd.read_csv('s3://customer-segmentation-kaggle/clustered_data.csv')
 
 ### APP
 ## Flask app
