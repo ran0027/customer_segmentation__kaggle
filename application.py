@@ -1,25 +1,29 @@
 from flask import Flask
 from dash import Dash, html, dash_table, dcc, callback, Output, Input, State
 import boto3
+import os
 import json
 import pandas as pd
 import plotly.express as px
 import dash_bootstrap_components as dbc
 
-# # Set a plotly express template for aesthetically pleasing plots
-# px.defaults.template = "plotly_white"
+### ACCESS DATA
 
-# # load clustered customer data
+## Locally
 # clustered_customer_data = pd.read_csv('Data/clustered_data.csv')
-# try loading from bucket
-clustered_customer_data = pd.read_csv('s3://customer-segmentation-kaggle/clustered_data.csv')
-# s3 = boto3.resource('s3')
-# bucket = s3.Object('customer-segmentation-kaggle', 'clustered_data.csv')
-# response = bucket.get()
 
-# Flask app
+## From the cloud
+# access S3 keys from config variables set on Heroku
+AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
+AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
+# load clustered customer data from S3 bucket
+clustered_customer_data = pd.read_csv('s3://customer-segmentation-kaggle/clustered_data.csv')
+
+### APP
+## Flask app
 flask_app = Flask(__name__)
 
+## Dash app
 # instantiate a dash app with a dbc theme; include meta-tags for mobile viewing (add later)
 app = Dash(__name__,
            server=flask_app,
@@ -27,6 +31,7 @@ app = Dash(__name__,
            prevent_initial_callbacks="initial_duplicate",
            meta_tags=[{'name': 'viewport', 'content': 'width=device-width, initial-scale=1.0'}])
 
+### FIGURE (treemap)
 # instantiate and customize treemap figure for displaying customer segmentation
 PAC_fig = px.treemap(clustered_customer_data,
                      path = ['cluster'],
@@ -41,6 +46,7 @@ PAC_fig.update_traces(marker=dict(cornerradius=5),
                       outsidetextfont=dict(color='slategray', family='Balto', size=26))
 PAC_fig.update_layout(margin=dict(l=20, r=20, t=0, b=20))
 
+### APP LAYOUT
 # specify app layout with TWO ROWS
 # (one for treemap, showing relationship b/w clusters,
 #  & one for tabs // to select an individual cluster and display more info)
@@ -73,6 +79,7 @@ app.layout = dbc.Container([
     ])
 ])
 
+### CALLBACKS (tabs)
 # update tab content based on selected tab
 @app.callback(
         Output('tab-content', 'children'),
@@ -126,7 +133,6 @@ def update_tab_content(active_tab, tab_labels):
 # def display_click_data(clickData):
 #     return json.dumps(clickData)
 
-# to run locally:
-
+### RUN LOCALLY
 if __name__ == '__main__':
     app.run_server(debug=True, port=8050, host='127.0.0.1')
